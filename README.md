@@ -1,4 +1,6 @@
-# Getting Started with Create React App
+# Higher-Order Game Theory
+
+This is a working proof of concept implementation of some basic ideas in Higher-Order Game Theory. It was inspired by [Cleo Nardo's](https://www.alignmentforum.org/users/cleo-nardo) [sequence of posts on the Alignment Forum](https://www.alignmentforum.org/s/Qn8DhSrdA2qPH2eJT).
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
