@@ -1,7 +1,7 @@
 import { Optimizer } from './optimizer';
 
 import { 
-    cartesian, intersectionOfAll, deepSetContains
+    cartesian, deepSetContains
 } from './utility';
 
 export type OptionProfile<Option> = Option[];
@@ -92,7 +92,7 @@ export class BestResponseConstructor_v0<Player, Option, Payoff> implements
             getPlayerDeviationMap: HasPlayerDeviationMap<Option>["getPlayerDeviationMap"]): 
                 BestResponseFunction<Option> {
         return function (optionProfile: OptionProfile<Option>) {
-            const profilesUsingBestResponses = players.map(
+            const allPlayerBestResponses = players.map(
                     (player: Player, playerIndex: number) => {
                 const playerDeviationMap = getPlayerDeviationMap(playerIndex);
 
@@ -104,18 +104,21 @@ export class BestResponseConstructor_v0<Player, Option, Payoff> implements
                 }
 
                 const optimizer = optimizers[playerIndex];
-                const optimizerBestResponses = optimizer(playerTask);
+                const playerBestResponseSet = optimizer(playerTask);
+                const playerBestResponses = [...playerBestResponseSet];
 
-                const profilesUsingPlayerBestResponses = 
-                    new Set([...optimizerBestResponses].map((bestResponse) => 
-                        playerDeviationMap(optionProfile)(bestResponse)));
+                //const profilesUsingPlayerBestResponses = 
+                    //new Set([...optimizerBestResponses].map((bestResponse) => 
+                        //playerDeviationMap(optionProfile)(bestResponse)));
 
-                return profilesUsingPlayerBestResponses;
+                return playerBestResponses;
             });
 
-            const bestResponseProfiles = intersectionOfAll(...profilesUsingBestResponses);
+            //const bestResponseProfiles = intersectionOfAll(...profilesUsingBestResponses);
+            const productOfBestResponses = cartesian(...allPlayerBestResponses);
+            const bestResponses = new Set(productOfBestResponses);
 
-            return bestResponseProfiles;
+            return bestResponses;
         }
     }
 }
