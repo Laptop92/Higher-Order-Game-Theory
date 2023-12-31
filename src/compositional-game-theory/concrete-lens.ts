@@ -1,5 +1,6 @@
 export type ViewFunction<X, Y> = (x: X) => Y;
 export type UpdateFunction<X, R, S> = (x: X, r: R) => S;
+export type Singleton = {};
 
 export type ConcreteLens<X, S, Y, R> = {
     view: ViewFunction<X, Y>
@@ -77,4 +78,30 @@ export function getEffect<Y, R>(yToR: (y: Y) => R): ConcreteLens<Y, R, {}, {}>{
     }
 
     return effect;
+}
+
+export function getBracketedLens<X, S, Y, R>(
+        view: ViewFunction<X, Y>, propagate: (r: R) => S): 
+            ConcreteLens<X, S, Y, R> {
+    const bracketedLens = {
+        view: view, 
+        update: (x: X, r: R) => propagate(r)
+    }
+
+    return bracketedLens;
+}
+
+export function viewIntoSingleton<X>(x: X): Singleton {
+    return {};
+}
+
+export function getCounitLens<X, S>(
+        getCoOutcome: (x: X) => S): 
+            ConcreteLens<X, S, {}, {}> {
+    const counitLens = {
+        view: viewIntoSingleton, 
+        update: (x: X, r: Singleton) => getCoOutcome(x)
+    }
+
+    return counitLens;
 }
