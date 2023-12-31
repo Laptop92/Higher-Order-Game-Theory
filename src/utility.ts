@@ -69,6 +69,18 @@ export function cartesian<T>(...arrays: T[][]): T[][] {
         a.flatMap((d:any) => b.map((e:any) => [d, e].flat()))) as T[][];
 }
 
+export function cartesian2D<T1, T2>(array1: T1[], array2: T2[]): [T1, T2][] {
+    let cartesianProduct: [T1, T2][] = [];
+
+    for(let i = 0; i < array1.length; i++){
+        for(let j = 0; j < array2.length; j++){
+            cartesianProduct.push([array1[i], array2[j]]);
+        }
+    }
+
+    return cartesianProduct;
+}
+
 export function toArray<T>(iterable: Iterable<T>): T[]{
     return [...iterable];
 }

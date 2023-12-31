@@ -1,5 +1,9 @@
+import { cartesian2D } from '../utility';
+
 import { 
-    ConcreteLens, ViewFunction, getBracketedLens, getCounitLens
+    ConcreteLens, ViewFunction, composeConcreteLenses, 
+    getBracketedLens, getCounitLens, getEffect, getObservation, 
+    getOutcomeFunction, getState
 } from './concrete-lens';
 
 export type PlayFunction<OptionProfile, Observation, CoOutcome, Action, Outcome> = 
@@ -82,7 +86,53 @@ export function getCounit<Observation, CoOutcome>(
     const selectionFunction = (observation: Observation, 
         outcomeFunction: OutcomeFunction<{}, {}>) => concreteLenses;
 
-    const computation = getAtom(concreteLenses, selectionFunction);
+    const counit = getAtom(concreteLenses, selectionFunction);
 
-    return computation;
+    return counit;
+}
+/**
+ * Computes h ∘ g
+ * This corresponds to playing h sequentially after g
+ * @param g A concrete open game
+ * @param h A concrete open game
+ * @returns The composed concrete open game h ∘ g
+ */
+export function composeConcreteOpenGames<OptionProfileG, X, S, Y, R, OptionProfileH, Z, Q>(
+        g: ConcreteOpenGame<OptionProfileG, X, S, Y, R>, 
+        h: ConcreteOpenGame<OptionProfileH, Y, R, Z, Q>): 
+            ConcreteOpenGame<[OptionProfileG, OptionProfileH], X, S, Z, Q>{
+    const composedOptionProfiles = cartesian2D(g.optionProfiles, h.optionProfiles);
+    const composedPlay = (optionProfile: [OptionProfileG, OptionProfileH]) => 
+        composeConcreteLenses(g.play(optionProfile[0]), h.play(optionProfile[1]));
+
+    const composedBestResponse = (x: X, k: OutcomeFunction<Z, Q>) => {
+        return (optionProfile: [OptionProfileG, OptionProfileH]) => {
+            const state = getState(x);
+            const effect = getEffect(k);
+
+            const effectOfPlay = composeConcreteLenses(h.play(optionProfile[1]), effect);
+            const playAfterState = composeConcreteLenses(state, g.play(optionProfile[0]));
+
+            const gOutcomeFunction = getOutcomeFunction(effectOfPlay);
+            const hObservation = getObservation(playAfterState);
+
+            const gBestResponseRelation = g.bestResponse(x, gOutcomeFunction);
+            const hBestResponseRelation = h.bestResponse(hObservation, k);
+
+            const bestResponsesInG = gBestResponseRelation(optionProfile[0]);
+            const bestResponsesInH = hBestResponseRelation(optionProfile[1]);
+
+            const bestResponses = cartesian2D(bestResponsesInG, bestResponsesInH);
+
+            return bestResponses;
+        }
+    };
+
+    const composedConcreteOpenGame: ConcreteOpenGame<[OptionProfileG, OptionProfileH], X, S, Z, Q> = {
+        optionProfiles: composedOptionProfiles, 
+        play: composedPlay, 
+        bestResponse: composedBestResponse
+    }
+
+    return composedConcreteOpenGame;
 }

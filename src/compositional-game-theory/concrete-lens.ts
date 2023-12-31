@@ -1,3 +1,5 @@
+import { OutcomeFunction } from "./open-game";
+
 export type ViewFunction<X, Y> = (x: X) => Y;
 export type UpdateFunction<X, R, S> = (x: X, r: R) => S;
 export type Singleton = {};
@@ -64,20 +66,45 @@ export function tensorConcreteLenses<X1, S1, Y1, R1, X2, S2, Y2, R2>(
 
 export function getState<X, S>(x: X): ConcreteLens<{}, {}, X, S>{
     const state: ConcreteLens<{}, {}, X, S> = {
-        view: () => x,
+        view: (o: {}) => x,
         update: (o: {}, s: S) => {return {}}
     }
 
     return state;
 }
 
-export function getEffect<Y, R>(yToR: (y: Y) => R): ConcreteLens<Y, R, {}, {}>{
+export function getEffect<Y, R>(outcomeFunction: (y: Y) => R): ConcreteLens<Y, R, {}, {}>{
     const effect: ConcreteLens<Y, R, {}, {}> = {
         view: (y: Y) => {return {}},
-        update: (y: Y, o: {}) => {return yToR(y)}
+        update: (y: Y, o: {}) => {return outcomeFunction(y)}
     }
 
     return effect;
+}
+
+/**
+ * Returns the underlying observation from a state
+ * @param state 
+ * @returns The observation that the lens views
+ */
+export function getObservation<X, S>(state: ConcreteLens<{}, {}, X, S>): X{
+    const x = state.view({});
+
+    return x;
+}
+
+/**
+ * Returns the underlying observation from a state
+ * @param state 
+ * @returns The observation that the lens views
+ */
+export function getOutcomeFunction<Y, R>(effect: ConcreteLens<Y, R, {}, {}>): 
+        OutcomeFunction<Y, R>{
+    const outcomeFunction = (y: Y) => {
+        return effect.update(y, {});
+    }
+
+    return outcomeFunction;
 }
 
 export function getBracketedLens<X, S, Y, R>(
