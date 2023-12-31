@@ -60,3 +60,21 @@ export function tensorConcreteLenses<X1, S1, Y1, R1, X2, S2, Y2, R2>(
 
     return tensorConcreteLens;
 }
+
+export function getState<X, S>(x: X): ConcreteLens<{}, {}, X, S>{
+    const state: ConcreteLens<{}, {}, X, S> = {
+        view: () => x,
+        update: (o: {}, s: S) => {return {}}
+    }
+
+    return state;
+}
+
+export function getEffect<Y, R>(yToR: (y: Y) => R): ConcreteLens<Y, R, {}, {}>{
+    const effect: ConcreteLens<Y, R, {}, {}> = {
+        view: (y: Y) => {return {}},
+        update: (y: Y, o: {}) => {return yToR(y)}
+    }
+
+    return effect;
+}
