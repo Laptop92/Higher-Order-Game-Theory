@@ -1,4 +1,4 @@
-import { OutcomeFunction } from "./open-game";
+import { OutcomeFunction } from "./concrete-open-game";
 
 export type ViewFunction<X, Y> = (x: X) => Y;
 export type UpdateFunction<X, R, S> = (x: X, r: R) => S;
@@ -107,15 +107,15 @@ export function getOutcomeFunction<Y, R>(effect: ConcreteLens<Y, R, {}, {}>):
     return outcomeFunction;
 }
 
-export function getBracketedLens<X, S, Y, R>(
+export function getComputationalLens<X, S, Y, R>(
         view: ViewFunction<X, Y>, propagate: (r: R) => S): 
             ConcreteLens<X, S, Y, R> {
-    const bracketedLens = {
+    const computationalLens = {
         view: view, 
         update: (x: X, r: R) => propagate(r)
     }
 
-    return bracketedLens;
+    return computationalLens;
 }
 
 export function viewIntoSingleton<X>(x: X): Singleton {

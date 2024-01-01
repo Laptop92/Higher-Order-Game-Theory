@@ -2,8 +2,8 @@ import { cartesian2D } from '../utility';
 
 import { 
     ConcreteLens, ViewFunction, composeConcreteLenses, 
-    getBracketedLens, getCounitLens, getEffect, getObservation, 
-    getOutcomeFunction, getState
+    tensorConcreteLenses, getComputationalLens, getCounitLens, 
+    getEffect, getObservation, getOutcomeFunction, getState
 } from './concrete-lens';
 
 export type PlayFunction<OptionProfile, Observation, CoOutcome, Action, Outcome> = 
@@ -17,7 +17,7 @@ export type Context<Observation, Action, Outcome> = {
 }
 
 //This defines a binary relation in terms of forward images
-//i.e. given an x on the left, what is the list of X's that can appear on the right
+//i.e. given an x on the left, what is the list of X's on the right that x is related to?
 export type BinaryRelation<X> = (x: X) => X[];
 
 export type ConcreteBestResponseFunction<OptionProfile, Observation, Action, Outcome> = 
@@ -67,7 +67,7 @@ export function getComputation<Observation, CoOutcome, Action, Outcome>(
                 ConcreteLens<Observation, CoOutcome, Action, Outcome>, 
                 Observation, CoOutcome, Action, Outcome
             > {
-    const concreteLenses = [getBracketedLens(chooseAction, propagate)];
+    const concreteLenses = [getComputationalLens(chooseAction, propagate)];
     const selectionFunction = (observation: Observation, 
         outcomeFunction: OutcomeFunction<Action, Outcome>) => concreteLenses;
 
@@ -135,4 +135,54 @@ export function composeConcreteOpenGames<OptionProfileG, X, S, Y, R, OptionProfi
     }
 
     return composedConcreteOpenGame;
+}
+
+/**
+ * Computes g ⊗ h
+ * This corresponds to playing g and h simultaneously
+ * @param g A concrete open game
+ * @param h A concrete open game
+ * @returns The composed concrete open game g ⊗ h
+ */
+export function tensorConcreteOpenGames<
+            OptionProfileG, X1, S1, Y1, R1, OptionProfileH, X2, S2, Y2, R2
+        >(
+            g: ConcreteOpenGame<OptionProfileG, X1, S1, Y1, R1>, 
+            h: ConcreteOpenGame<OptionProfileH, X2, S2, Y2, R2>
+        ): ConcreteOpenGame<
+            [OptionProfileG, OptionProfileH], [X1, X2], [S1, S2], [Y1, Y2], [R1, R2]
+        >{
+    const tensorOptionProfiles = cartesian2D(g.optionProfiles, h.optionProfiles);
+    const tensorPlay = (optionProfile: [OptionProfileG, OptionProfileH]) => 
+        tensorConcreteLenses(g.play(optionProfile[0]), h.play(optionProfile[1]));
+
+    const tensorBestResponse = (x: [X1, X2], k: OutcomeFunction<[Y1, Y2], [R1, R2]>) => {
+        return (optionProfile: [OptionProfileG, OptionProfileH]) => {
+            const gChooseAction = g.play(optionProfile[0]).view;
+            const hChooseAction = h.play(optionProfile[1]).view;
+
+            const gOutcomeFunction = (y1: Y1) => k([y1, hChooseAction(x[1])])[0];
+            const hOutcomeFunction = (y2: Y2) => k([gChooseAction(x[0]), y2])[1];
+
+            const gBestResponseRelation = g.bestResponse(x[0], gOutcomeFunction);
+            const hBestResponseRelation = h.bestResponse(x[1], hOutcomeFunction);
+
+            const bestResponsesInG = gBestResponseRelation(optionProfile[0]);
+            const bestResponsesInH = hBestResponseRelation(optionProfile[1]);
+
+            const bestResponses = cartesian2D(bestResponsesInG, bestResponsesInH);
+
+            return bestResponses;
+        }
+    }
+
+    const tensorConcreteOpenGame: ConcreteOpenGame<
+                [OptionProfileG, OptionProfileH], [X1, X2], [S1, S2], [Y1, Y2], [R1, R2]
+            > = {
+        optionProfiles: tensorOptionProfiles, 
+        play: tensorPlay, 
+        bestResponse: tensorBestResponse
+    }
+
+    return tensorConcreteOpenGame;
 }
